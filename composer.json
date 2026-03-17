@@ -1,0 +1,12 @@
+{
+    "name": "aodrl/ship_new",
+    "authors": [
+        {
+            "name": "Josuncheol",
+            "email": "jsc621221@gmail.com"
+        }
+    ],
+    "require": {
+        "phpoffice/phpspreadsheet": "^5.5"
+    }
+}

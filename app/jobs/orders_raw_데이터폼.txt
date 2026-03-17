@@ -1,0 +1,86 @@
+"orderId": 27100176170648,	//주문번호
+"vendorItemId": 73698092858,		//옵션ID
+
+
+"refer": "아이폰앱", 
+"paidAt": "2026-03-11T22:25:57", 
+"status": "ACCEPT", 
+"orderId": 27100176170648,	//주문번호
+"orderer": 
+{
+	"name": "홍지연", 
+	"email": "", 
+	"safeNumber": "0504-4942-4839", 
+	"ordererNumber": null
+}, 
+"receiver": 
+{
+	"name": "한철희", 
+	"addr1": "경기도 광주시 태전동 722 힐스테이트 태전2차 에듀포레", 
+	"addr2": "2004동 2202호", 
+	"postCode": "12789", 
+	"safeNumber": "0504-4942-4839", 
+	"receiverNumber": null
+}, 
+"orderedAt": "2026-03-11T22:25:31", 
+"orderItems": 
+[
+	{
+		"canceled": false, 
+		"productId": 4926540404,		//노출상품ID
+		"orderPrice": 12060, 
+		"salesPrice": 12060, 
+		"cancelCount": 0, 
+		"confirmDate": null, 
+		"usedProduct": false, 
+		"etcInfoValue": null, 
+		"pricingBadge": false, 
+		"upBundleItem": false, 
+		"upBundleSize": null, 
+		"vendorItemId": 73698092858,		//옵션ID
+		"discountPrice": 0, 
+		"etcInfoHeader": null, 
+		"etcInfoValues": null, 
+		"shippingCount": 1, 
+		"vendorItemName": "두루마리휴지 순수 3겹 물에녹는휴지 먼지없는 두루말이 착한화장지, 1개, 30롤", 
+		"coupangDiscount": 0, 
+		"extraProperties": [], 
+		"sellerProductId": 639067717,		//등록상품ID
+		"sellerProductName": "순수 30롤 묶음", 
+		"holdCountForCancel": 0, 
+		"plannedShippingDate": "", 
+		"vendorItemPackageId": 0, 
+		"upBundleVendorItemId": null, 
+		"estimatedShippingDate": "2026-03-12", 
+		"externalVendorSkuCode": "", 
+		"instantCouponDiscount": 0, 
+		"sellerProductItemName": "1개 30롤 17m", 
+		"vendorItemPackageName": "두루마리휴지 순수 3겹 물에녹는휴지 먼지없는 두루말이 착한화장지", 
+		"deliveryChargeTypeName": "무료", 
+		"upBundleVendorItemName": null, 
+		"invoiceNumberUploadDate": "", 
+		"downloadableCouponDiscount": 0, 
+		"firstSellerProductItemName": "1개 17m 30롤"
+	}
+], 
+"remoteArea": false, 
+"remotePrice": 0, 
+"shipmentType": "THIRD_PARTY", 
+"deliveredDate": "", 
+"invoiceNumber": "", 
+"shipmentBoxId": 664050744442945,	// 묶음배송번호
+"shippingPrice": 0, 
+"splitShipping": false, 
+"inTrasitDateTime": "", 
+"ableSplitShipping": false, 
+"parcelPrintMessage": "문 앞", 
+"deliveryCompanyName": "", 
+"overseaShippingInfoDto": 
+{"ordererSsn": "", "ordererPhoneNumber": "", "personalCustomsClearanceCode": ""}}
+
+
+
+
+"code" : "PRECONDITION_FAILED",
+"message" : "No matched http method of API specification for /api/v4/vendors/A00180903/ordersheets/acknowledgement found, did you mean to request via PUT,PATCH?",
+  "transactionId" : "3ff66888-a05f-416a-a99e-3ac1143cec9d"
