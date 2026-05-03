@@ -2,4 +2,6 @@
 /storage
 /.env
 /node_modules
-*.log
+*.logvendor/ 
+.env 
+storage/ 

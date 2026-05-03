@@ -1,0 +1,86 @@
+로젠양식 엑셀 다운로드 다시 할 수 있도록
+순수 30롤, 2개짜리 일때 로젠양식에 수량 1개인데 2개로 나와서 문제가 생김
+
+네이버도 쿠팡과 동일하게 할 수 있도록
+	설정을 할 수 있도록 하기
+	버튼 클릭해서 설정페이지 가도록해서 운영중인 온라인판매 사이트 선택하기
+	이렇게 설정을 해놓으면 신규주문, 배송반영 등을 할때 이 설정 사이트의 내용을 다 가져올 수 있도록
+파이썬으로 송장출력 할 수 있게 코딩하기
+로켓그로스 api로 가져올 수 있는데 체크 후 표시할께 뭔지 확인
+
+고객센터 문의, 고객문의, 반품를 api로 가져올수 있는지 확인
+매출 성장 캠페인 성과요약 가져올 수 있는지 체크
+판매분석 - 주문일 기준 금액으로 그래프 형식 2주 기준으로 그래프 그리기(판매량, 매출)
+
+
+
+
+##작업 위치###
+헤드라인(배송상태체크, 송장업로드, 옵션관리, 로그아웃) 있는 영역
+
+###문제###
+배송상태 체크 버튼 실행했는데, 변경이 되긴했는데 실제 쿠팡과의 수량이 다름
+
+###요구사항###
+배송중 수량은 변경되어서 맞았는데, 배송지시가 실제로 배송중이 되면서 수량이 줄어들어야하는데
+줄어들지 않고 이전 수량과 동일
+
+이전에 api 던져서 배송중이면 is_delivering = 1 업데이트라고 말했는데,
+db데이터를 확인해보니 업데이트가 안된거 같아.
+
+이 부분 확인해줘
+
+실제 쿠팡 수량 안내
+배송지시 : 5
+배송중 : 17
+
+
+
+###마지막 체크사항###
+다 수정 후 한글 깨지지 않게 체크 확인
+
+
+
+## 🤖 Optimized Prompt for Codex
+
+**Context:** PHP 8.x / MySQL / Legacy Admin Renewal
+**Task:** Navigation UI refactoring, New Settings Page, and Excel Export Logic Fix
+
+### 1. Navigation UI (Headline Area)
+- **Current:** Horizontal buttons (Status, Upload, Option, Logout) - *Space is tight.*
+- **Update:** - Replace/Group buttons into a single **"Settings(⚙️)"** or **"Menu(☰)"** icon.
+    - Implement a **Dropdown Menu** upon clicking the icon.
+    - **Menu Items:** Existing buttons + **[Site Settings]** (New Link).
+
+### 2. New Page: [Site Settings] & DB Integration
+* **Database Setup (New Table):**
+    * Create a table named `site_settings` (or your preferred naming convention).
+    * **Columns:** `id` (INT, AI, PK), `site_code` (VARCHAR - coupang, smartstore, etc.), `is_active` (TINYINT, 1: Active / 0: Inactive), `updated_at` (DATETIME).
+* **Function:** Manage the active status of online marketplaces.
+* **UI Components:**
+    * **Checkboxes:** Coupang, SmartStore, 11st, Gmarket, Auction.
+    * **Top Feature:** [Select All] toggle button (Client-side JS).
+    * **Actions:** * **[Save] Button:** When clicked, it should perform an `INSERT ... ON DUPLICATE KEY UPDATE` or `REPLACE INTO` to sync the checkbox states with the `site_settings` table.
+        * **[Go to Dashboard] Button:** Redirect to the main admin index.
+* **Backend Logic:** * Use **PHP 8.x `mysql_` or `mysqli_`** functions (consistent with existing legacy code) to handle the CRUD operations.
+    * Ensure the page loads the initial checkbox states from the database upon entry.
+
+### 3. New Order Collection: Excel Export Logic
+- **Issue:** The unit 'ea' keeps reverting back despite previous changes to '개'.
+- **Requirement:** - Hardcode/Fix the unit to **'개'** in the Rosen-format Excel export logic.
+    - Ensure 'ea' **never** appears in the output, even after other logic updates.
+
+### 4. Critical Constraints
+- **Consistency:** Do NOT revert any previously modified logic unless explicitly requested.
+- **Encoding:** Ensure all outputs and files (Excel) are **UTF-8 (BOM)** or appropriate Korean encoding to prevent broken characters (한글 깨짐 방지).
+- **Code Style:** Maintain compatibility with **PHP 8.x** and existing MySQL integration.
+
+---
+
+### 💡 수정 포인트 및 팁:
+* **구조화:** Headline, New Page, Order Collection으로 영역을 나누어 모델이 작업 단위를 명확히 인지하게 했습니다.
+* **제약 조건 강조:** 'ea'가 자꾸 부활하는 문제를 방지하기 위해 "Hardcode/Fix"라는 표현을 써서 논리를 고정하도록 유도했습니다.
+* **인코딩:** 한글 깨짐 방지를 위해 `UTF-8` 혹은 `Korean encoding` 키워드를 명시했습니다.
+* **토큰 절약:** 불필요한 서술형 문장을 제거하고 불렛포인트(Bullet points) 중심으로 핵심 키워드만 남겼습니다.
+
+추가로, 이 설정 페이지의 **DB 테이블 구조(Schema)**도 설계해 드릴까요? 혹은 **아이콘 클릭 시 나타날 드롭다운의 HTML/CSS 예시**가 필요하신가요?

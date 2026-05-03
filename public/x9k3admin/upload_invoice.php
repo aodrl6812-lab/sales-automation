@@ -1,73 +1,79 @@
 <?php
 declare(strict_types=1);
 
+use App\Services\SystemService;
+
 require_once __DIR__ . '/../../app/bootstrap.php';
-require_once __DIR__ . '/../../app/db.php';
+require_once APP_ROOT . '/app/services/SystemService.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+$error = '';
+$success = '';
 
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (!isset($_FILES['invoice_file'])) {
-        die("파일 없음");
+        $error = '파일을 선택하세요.';
+    } else {
+        $file = $_FILES['invoice_file'];
+
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            $error = '업로드에 실패했습니다.';
+        } else {
+            $ext = strtolower((string)pathinfo((string)$file['name'], PATHINFO_EXTENSION));
+
+            if (!in_array($ext, ['xlsx', 'xls'], true)) {
+                $error = 'xlsx/xls 파일만 업로드 가능합니다.';
+            } else {
+                $uploadDir = APP_ROOT . '/storage/invoice/';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
+                }
+
+                $filename = 'invoice_' . date('Ymd_His') . '.' . $ext;
+                $target = $uploadDir . $filename;
+
+                if (!move_uploaded_file((string)$file['tmp_name'], $target)) {
+                    $error = '파일 저장에 실패했습니다.';
+                } else {
+                    $success = '업로드 완료: ' . $filename;
+                }
+            }
+        }
     }
-
-    $file = $_FILES['invoice_file'];
-
-    if ($file['error'] !== UPLOAD_ERR_OK) {
-        die("업로드 오류");
-    }
-
-    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
-
-    if (!in_array(strtolower($ext), ['xlsx','xls'])) {
-        die("엑셀 파일만 업로드 가능");
-    }
-
-    $uploadDir = __DIR__ . '/../../storage/invoice/';
-
-    if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
-    }
-
-    $filename = 'invoice_' . date('Ymd_His') . '.' . $ext;
-
-    $target = $uploadDir . $filename;
-
-    if (!move_uploaded_file($file['tmp_name'], $target)) {
-        die("파일 저장 실패");
-    }
-
-    echo "업로드 성공<br>";
-    echo "파일: " . $filename;
-
-	header('Location: /x9k3admin/index.php?action=process_shipping');
 }
+
+$service = new SystemService();
+$pageTitle = '송장업로드';
+$menuGroups = $service->getMenuGroups();
+$activeAction = 'invoice_upload';
+
+require APP_ROOT . '/app/views/layout/header.php';
 ?>
+<section class="card">
+  <div class="page-head-row">
+    <h3>송장업로드</h3>
+  </div>
+  <p class="muted">업로드 후 대시보드에서 배송반영 작업을 실행하세요.</p>
 
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>송장 업로드</title>
-</head>
+  <form method="post" enctype="multipart/form-data">
+    <div class="order-form-grid">
+      <label class="full">송장 파일 선택 (.xlsx, .xls)
+        <input type="file" name="invoice_file" accept=".xlsx,.xls" required>
+      </label>
 
-<body>
-<div style="margin-bottom:20px;">
-	<a href="/x9k3admin">
-		<button style="padding:12px 20px;font-size:14px;background:#555;color:#fff;border:none;border-radius:6px;cursor:pointer;">← 대시보드</button>
-	</a>
-</div>
+      <div class="form-actions full">
+        <button class="run-btn" type="submit">업로드</button>
+        <a class="link-btn" href="index.php?action=dashboard">대시보드로 이동</a>
+      </div>
 
-<h2>로젠 송장 엑셀 업로드</h2>
+      <?php if ($success !== ''): ?>
+        <div class="badge success full"><?= htmlspecialchars($success, ENT_QUOTES) ?></div>
+      <?php endif; ?>
 
-<form method="post" enctype="multipart/form-data">
-
-<input type="file" name="invoice_file" required>
-
-<br><br>
-
-<button type="submit">업로드</button>
-
-</form>
-
-</body>
-</html>
+      <?php if ($error !== ''): ?>
+        <div class="badge failed full"><?= htmlspecialchars($error, ENT_QUOTES) ?></div>
+      <?php endif; ?>
+    </div>
+  </form>
+</section>
+<?php
+require APP_ROOT . '/app/views/layout/footer.php';

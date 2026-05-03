@@ -1,226 +1,171 @@
 <?php
 declare(strict_types=1);
 
+use App\Services\SystemService;
+
 require_once __DIR__ . '/../db.php';
+require_once __DIR__ . '/../services/SystemService.php';
 
 function run_option_manage_page(): void
 {
     $pdo = db();
 
-    $list = $pdo->query("
-        SELECT 
-            m.option_id,
-            m.factory_product_name,
-            GROUP_CONCAT(
-                CONCAT(r.box_qty,' → ',r.box_size)
-                ORDER BY r.box_qty
-                SEPARATOR ', '
-            ) AS rules
-        FROM product_option_map m
-        LEFT JOIN product_option_box_rule r
-            ON m.option_id = r.option_id
-        GROUP BY m.option_id
-        ORDER BY m.option_id DESC
-        LIMIT 50
-    ")->fetchAll(PDO::FETCH_ASSOC);
+    $list = $pdo->query(
+        'SELECT m.option_id, m.factory_product_name,
+                GROUP_CONCAT(CONCAT(r.box_qty, "개=", r.box_size) ORDER BY r.box_qty SEPARATOR ", ") AS rules
+         FROM product_option_map m
+         LEFT JOIN product_option_box_rule r ON m.option_id = r.option_id
+         GROUP BY m.option_id
+         ORDER BY m.option_id DESC
+         LIMIT 100'
+    )->fetchAll(PDO::FETCH_ASSOC);
 
-    echo "<h2>옵션ID 상품명 등록</h2>";
+    $service = new SystemService();
+    $pageTitle = '옵션 관리';
+    $menuGroups = $service->getMenuGroups();
+    $activeAction = 'option_manage';
 
-    echo '<form method="post" action="?action=option_save">';
+    require APP_ROOT . '/app/views/layout/header.php';
+    ?>
+    <section class="card">
+      <div class="page-head-row">
+        <h3>옵션 등록/수정</h3>
+      </div>
+      <p class="muted">옵션 ID, 공장 상품명, 박스 규칙을 저장합니다.</p>
 
-    echo '<input 
-        type="text" 
-        name="option_id" 
-        placeholder="옵션ID (vendorItemId)" 
-        required 
-        style="width:100%;padding:10px;margin-bottom:8px;">';
+      <form method="post" action="index.php?action=option_save">
+        <div class="order-form-grid">
+          <label>옵션 ID (vendorItemId)
+            <input type="text" name="option_id" required>
+          </label>
 
-    echo '<input 
-        type="text" 
-        name="factory_product_name" 
-        placeholder="공장용 상품명" 
-        required 
-        style="width:100%;padding:10px;margin-bottom:8px;">';
+          <label>공장용 상품명
+            <input type="text" name="factory_product_name" required>
+          </label>
 
-    echo '<h3 style="margin-top:20px;">박스 단위 규칙</h3>';
+          <div class="full">
+            <h3 style="margin:6px 0 10px;">박스 규칙</h3>
+            <table id="boxRuleTable" class="order-table">
+              <thead>
+                <tr>
+                  <th>수량</th>
+                  <th>박스 사이즈</th>
+                  <th>삭제</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <div class="form-actions" style="margin-top:10px;">
+              <button class="link-btn" type="button" onclick="addBoxRow()">+ 규칙 추가</button>
+            </div>
+          </div>
 
-    echo '
-    <table id="boxRuleTable" border="1" width="100%" style="margin-bottom:10px;">
-        <thead>
+          <div class="form-actions full">
+            <button class="run-btn" type="submit">저장</button>
+            <a class="link-btn" href="index.php?action=dashboard">대시보드로 이동</a>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <section class="card" style="margin-top:12px;">
+      <div class="page-head-row">
+        <h3>최근 등록 목록</h3>
+      </div>
+      <p class="muted">최근 100개 옵션 기준</p>
+
+      <div class="table-wrap">
+        <table class="order-table">
+          <thead>
             <tr>
-                <th>묶음수량</th>
-                <th>박스사이즈</th>
-                <th>삭제</th>
+              <th>옵션 ID</th>
+              <th>상품명</th>
+              <th>박스 규칙</th>
             </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-    ';
+          </thead>
+          <tbody>
+          <?php if (empty($list)): ?>
+            <tr><td colspan="3" class="muted">등록된 옵션이 없습니다.</td></tr>
+          <?php else: ?>
+            <?php foreach ($list as $row): ?>
+              <tr>
+                <td><?= htmlspecialchars((string)($row['option_id'] ?? '')) ?></td>
+                <td><?= htmlspecialchars((string)($row['factory_product_name'] ?? '')) ?></td>
+                <td><?= htmlspecialchars((string)($row['rules'] ?? '-')) ?></td>
+              </tr>
+            <?php endforeach; ?>
+          <?php endif; ?>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-    echo '<button type="button" onclick="addBoxRow()">+ 박스단위 추가</button>';
-
-    echo '<br><br>';
-
-    echo '<button style="
-        width:100%;
-        padding:12px;
-        background:#4CAF50;
-        color:#fff;
-        border:0;
-        border-radius:6px;
-        font-size:16px;
-    ">저장</button>';
-
-    echo '</form>';
-
-    echo "<hr>";
-    echo "<h3>최근 등록 목록</h3>";
-
-    echo "<table border='1' width='100%'>";
-    echo "<tr>
-            <th>옵션ID</th>
-            <th>상품명</th>
-            <th>박스규칙</th>
-          </tr>";
-
-    foreach ($list as $row) {
-
-        echo "<tr>";
-        echo "<td>" . htmlspecialchars($row['option_id']) . "</td>";
-        echo "<td>" . htmlspecialchars($row['factory_product_name']) . "</td>";
-        echo "<td>" . htmlspecialchars($row['rules'] ?? '-') . "</td>";
-        echo "</tr>";
-    }
-
-    echo "</table>";
-
-    echo "<br>";
-
-    echo '<a href="index.php" style="
-        display:block;
-        padding:12px;
-        text-align:center;
-        border:1px solid #ddd;
-        border-radius:12px;
-        text-decoration:none;
-        margin-top:12px;
-    ">← 대시보드로 이동</a>';
-
-    echo '
     <script>
-
-    function addBoxRow(qty="", size="")
-    {
-        const tbody = document.querySelector("#boxRuleTable tbody");
-
-        const tr = document.createElement("tr");
-
-        tr.innerHTML = `
-            <td>
-                <input type="number"
-                       name="box_qty[]"
-                       value="${qty}"
-                       required
-                       style="width:100%;">
-            </td>
-
-            <td>
-                <select name="box_size[]" required style="width:100%;">
-                    <option value="">선택</option>
-                    <option value="S" ${size==="S"?"selected":""}>S</option>
-                    <option value="M" ${size==="M"?"selected":""}>M</option>
-                    <option value="L" ${size==="L"?"selected":""}>L</option>
-                    <option value="XL" ${size==="XL"?"selected":""}>XL</option>
-                </select>
-            </td>
-
-            <td>
-                <button type="button"
-                        onclick="this.closest(\'tr\').remove()">
-                    삭제
-                </button>
-            </td>
-        `;
-
-        tbody.appendChild(tr);
+    function addBoxRow(qty, size) {
+      qty = qty || '';
+      size = size || '';
+      var tbody = document.querySelector('#boxRuleTable tbody');
+      var tr = document.createElement('tr');
+      tr.innerHTML = '<td><input type="number" name="box_qty[]" value="' + qty + '" required min="1"></td>' +
+                     '<td><select name="box_size[]" required>' +
+                     '<option value="">선택</option>' +
+                     '<option value="S" ' + (size === 'S' ? 'selected' : '') + '>S</option>' +
+                     '<option value="M" ' + (size === 'M' ? 'selected' : '') + '>M</option>' +
+                     '<option value="L" ' + (size === 'L' ? 'selected' : '') + '>L</option>' +
+                     '<option value="XL" ' + (size === 'XL' ? 'selected' : '') + '>XL</option>' +
+                     '</select></td>' +
+                     '<td><button class="link-btn" type="button" onclick="this.closest(\'tr\').remove()">삭제</button></td>';
+      tbody.appendChild(tr);
     }
-
+    addBoxRow();
     </script>
-    ';
+    <?php
+    require APP_ROOT . '/app/views/layout/footer.php';
 }
 
 function run_option_save(): void
 {
     $pdo = db();
 
-    $optionId = trim($_POST['option_id'] ?? '');
-    $productName = trim($_POST['factory_product_name'] ?? '');
-
-    $boxQtyList  = $_POST['box_qty'] ?? [];
+    $optionId = trim((string)($_POST['option_id'] ?? ''));
+    $productName = trim((string)($_POST['factory_product_name'] ?? ''));
+    $boxQtyList = $_POST['box_qty'] ?? [];
     $boxSizeList = $_POST['box_size'] ?? [];
 
-    if (!$optionId || !$productName) {
-        echo "값이 부족합니다.";
-        return;
+    if ($optionId === '' || $productName === '') {
+        header('Location: index.php?action=option_manage');
+        exit;
     }
 
     try {
-
         $pdo->beginTransaction();
 
-        // 옵션 기본 정보 저장
-        $stmt = $pdo->prepare("
-            INSERT INTO product_option_map
-            (option_id, factory_product_name, unit_quantity, box_size)
-            VALUES (?, ?, 1, '')
-            ON DUPLICATE KEY UPDATE
-                factory_product_name = VALUES(factory_product_name)
-        ");
+        $stmt = $pdo->prepare('INSERT INTO product_option_map (option_id, factory_product_name, unit_quantity, box_size)
+                               VALUES (?, ?, 1, "")
+                               ON DUPLICATE KEY UPDATE factory_product_name = VALUES(factory_product_name)');
+        $stmt->execute([$optionId, $productName]);
 
-        $stmt->execute([
-            $optionId,
-            $productName
-        ]);
+        $pdo->prepare('DELETE FROM product_option_box_rule WHERE option_id = ?')->execute([$optionId]);
 
-        // 기존 박스 규칙 삭제
-        $pdo->prepare("
-            DELETE FROM product_option_box_rule
-            WHERE option_id = ?
-        ")->execute([$optionId]);
-
-        // 새 박스 규칙 저장
-        for ($i = 0; $i < count($boxQtyList); $i++) {
-
-            if (
-                empty($boxQtyList[$i]) ||
-                empty($boxSizeList[$i])
-            ) {
+        $count = min(count($boxQtyList), count($boxSizeList));
+        for ($i = 0; $i < $count; $i++) {
+            $qty = (int)($boxQtyList[$i] ?? 0);
+            $size = trim((string)($boxSizeList[$i] ?? ''));
+            if ($qty < 1 || $size === '') {
                 continue;
             }
 
-            $stmt = $pdo->prepare("
-                INSERT INTO product_option_box_rule
-                (option_id, box_qty, box_size)
-                VALUES (?, ?, ?)
-            ");
-
-            $stmt->execute([
-                $optionId,
-                (int)$boxQtyList[$i],
-                $boxSizeList[$i]
-            ]);
+            $stmt = $pdo->prepare('INSERT INTO product_option_box_rule (option_id, box_qty, box_size) VALUES (?, ?, ?)');
+            $stmt->execute([$optionId, $qty, $size]);
         }
 
         $pdo->commit();
-
-    } catch (Exception $e) {
-
-        $pdo->rollBack();
-
-        echo "저장 중 오류 발생: " . $e->getMessage();
-        return;
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
     }
 
-    header("Location: ?action=option_manage");
+    header('Location: index.php?action=option_manage');
     exit;
 }

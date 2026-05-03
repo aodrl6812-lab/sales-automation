@@ -1,112 +1,112 @@
 <?php
-	declare(strict_types=1);
+declare(strict_types=1);
 
-	require_once dirname(__DIR__, 2) . '/app/bootstrap.php';
+$root = dirname(__DIR__, 2);
+define('APP_ROOT', $root);
 
-	$action = $_GET['action'] ?? null;
+require_once APP_ROOT . '/app/bootstrap.php';
 
-	// 🔥 Job 시스템 타기 전에 먼저 처리
-	if ($action === 'option_manage' || $action === 'option_save') {
-		require_once dirname(__DIR__, 2) . '/app/jobs/option_manage.php';
+require_once APP_ROOT . '/app/controllers/BaseController.php';
+require_once APP_ROOT . '/app/services/SystemService.php';
+require_once APP_ROOT . '/app/services/OrderService.php';
+require_once APP_ROOT . '/app/services/BoardService.php';
+require_once APP_ROOT . '/app/services/OptionUnitPriceService.php';
+require_once APP_ROOT . '/app/services/ProductPriceMeasureService.php';
+require_once APP_ROOT . '/app/controllers/SystemController.php';
+require_once APP_ROOT . '/app/controllers/OrderController.php';
+require_once APP_ROOT . '/app/controllers/DeliveryController.php';
 
-		if($action === 'option_manage') run_option_manage_page();
-		else run_option_save();
-		exit;
-	}
+$action = isset($_GET['action']) ? (string)$_GET['action'] : 'dashboard';
 
-	if ($action) {
-		$jobName = match($action) {
-			'process_orders'	=> 'process_orders',
-			'process_shipping'	=> 'process_shipping',
-			default				=> null
-		};
+if ($action === 'option_manage' || $action === 'option_save') {
+    require_once APP_ROOT . '/app/jobs/option_manage.php';
+    if ($action === 'option_manage') {
+        run_option_manage_page();
+    } else {
+        run_option_save();
+    }
+    exit;
+}
 
-		if($jobName){
-			$jobId = job_create($jobName, 'mobile');
-			job_start($jobId);
+if ($action === 'site_settings' || $action === 'site_settings_save') {
+    require_once APP_ROOT . '/app/jobs/site_settings.php';
+    if ($action === 'site_settings') {
+        run_site_settings_page();
+    } else {
+        run_site_settings_save();
+    }
+    exit;
+}
 
-			try {
-				if ($action === 'process_orders'){
-					require_once dirname(__DIR__, 2) . '/app/jobs/process_orders.php';
-					run_process_orders($jobId, $from, $to);
-				} else if ($action === 'process_shipping'){
-					require_once dirname(__DIR__, 2) . '/app/jobs/process_shipping.php';
-					run_process_shipping($jobId, $from, $to);
-				}
- 
-				job_finish($jobId, true);
-			} catch (Throwable $e) {
-				job_log($jobId, 'error', $e->getMessage());
-				job_finish($jobId, false);
-			}
+if ($action === 'invoice_upload') {
+    require __DIR__ . '/upload_invoice.php';
+    exit;
+}
 
-			header('Location: /x9k3admin/index.php?job=' . $jobId);
-			exit;
-		}
-	}
-?>
-<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Ship New</title>
-  <style>
-    body{font-family:system-ui,Segoe UI,Apple SD Gothic Neo,Malgun Gothic,sans-serif;margin:16px;max-width:760px}
-    .btn{display:block;padding:14px 16px;margin:10px 0;border-radius:12px;border:1px solid #ddd;text-decoration:none}
-    .card{border:1px solid #eee;border-radius:12px;padding:12px;margin-top:12px}
-    .muted{color:#666;font-size:13px}
-    pre{white-space:pre-wrap;background:#fafafa;border:1px solid #eee;border-radius:12px;padding:12px}
-  </style>
-</head>
-<body>
-  <a href="?logout=1">로그아웃</a>
-  <h2>대시보드</h2>
-  <form method="get" style="margin-bottom:12px">
-	  <div class="card">
-		<b>주문 수집 기간</b>
-		<div class="muted">기본: 오늘 00:00:00 ~ 현재시간</div>		
-		<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
-		  <input name="from" value="<?= htmlspecialchars($from) ?>" placeholder="YYYY-mm-dd HH:ii:ss" style="padding:10px;border:1px solid #ddd;border-radius:10px;flex:1;min-width:220px">
-		  <input name="to" value="<?= htmlspecialchars($to) ?>" placeholder="YYYY-mm-dd HH:ii:ss" style="padding:10px;border:1px solid #ddd;border-radius:10px;flex:1;min-width:220px">
-		  <button style="padding:10px 14px;border:1px solid #ddd;border-radius:10px;background:#fff;">적용</button>
-		</div>
-	  </div>
-	</form>
-  <a class="btn" href="?action=option_manage">옵션ID별 상품명 등록</a>
-  <a class="btn" href="?action=process_orders&from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>">1) 신규주문 수집</a>
-  <a class="btn" href="/x9k3admin/upload_invoice.php" style="background:#3498db;color:#fff; border:none; border-radius:6px;">2) 로젠 송장 업로드</a>
-  
+if ($action === 'logout') {
+    header('Location: index.php?logout=1');
+    exit;
+}
 
-  <!--
-   <a class="btn" href="?action=normalize_coupang&from=<?= urlencode($from) ?>&to=<?= urlencode($to) ?>">1-2) 쿠팡 정규화 실행</a>
-  <a class="btn" href="?action=lozen">2-1) 로젠 파일 생성</a>
-  <a class="btn" href="?action=reset_lozen">2-2) 로젠 생성 리셋</a>
+$systemController = new \App\Controllers\SystemController();
+$orderController = new \App\Controllers\OrderController($systemController);
+$deliveryController = new \App\Controllers\DeliveryController($systemController);
 
-  <a class="btn" href="?action=import_lozen_invoice">3-2) 송장번호 업로드</a>
-  <a class="btn" href="?action=ship">4) 배송중 변경</a>
-  -->
-
-  <div class="card">
-    <b>최근 작업</b>
-    <div class="muted">작업 ID를 눌러 로그 확인</div>
-    <ul>
-      <?php foreach ($latestJobs as $j): ?>
-        <li>
-          <a href="?job=<?= (int)$j['id'] ?>">#<?= (int)$j['id'] ?></a>
-          <?= htmlspecialchars($j['job_name']) ?> /
-          <?= htmlspecialchars($j['status']) ?> /
-          <?= htmlspecialchars((string)$j['created_at']) ?>
-        </li>
-      <?php endforeach; ?>
-    </ul>
-  </div>
-
-  <?php if ($selectedJob): ?>
-    <div class="card">
-      <b>작업 로그 #<?= $selectedJob ?></b>
-      <pre><?php foreach ($logs as $l) { echo '['.$l['level'].'] '.$l['message']."\n"; } ?></pre>
-    </div>
-  <?php endif; ?>
-</body>
-</html>
+switch ($action) {
+    case 'order_create':
+        $orderController->create();
+        break;
+    case 'order_form':
+        $orderController->form();
+        break;
+    case 'order_edit':
+        $orderController->form(isset($_GET['id']) ? (int)$_GET['id'] : null);
+        break;
+    case 'order_save':
+        $orderController->save();
+        break;
+    case 'board':
+        $orderController->board();
+        break;
+    case 'board_form':
+        $orderController->boardForm();
+        break;
+    case 'board_edit':
+        $orderController->boardForm(isset($_GET['id']) ? (int)$_GET['id'] : null);
+        break;
+    case 'board_save':
+        $orderController->boardSave();
+        break;
+    case 'inspection':
+        $orderController->inspection();
+        
+		break;
+    
+	case 'option_unit_price':       $orderController->optionUnitPrice();
+        break;
+    case 'option_unit_price_save':
+        $orderController->optionUnitPriceSave();
+        break;
+    case 'product_price_measure':
+        $orderController->productPriceMeasure();
+        break;
+    case 'product_price_measure_save':
+        $orderController->productPriceMeasureSave();
+        break;
+    case 'delivery_status_check':
+        $deliveryController->statusCheck();
+        break;
+    case 'hometax_tax':
+        $systemController->hometaxTax();
+        break;
+    case 'ad_report':
+        $systemController->adReport();
+        break;
+    case 'site_monitor':
+        $systemController->siteMonitor();
+        break;
+    case 'dashboard':
+    default:
+        $systemController->dashboard();
+        break;
+}
